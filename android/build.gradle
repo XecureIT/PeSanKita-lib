@@ -1,0 +1,115 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.2.3'
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+archivesBaseName = "signal-service-android"
+version          = version_number
+group            = group_info
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile "org.whispersystems:signal-protocol-android:${signal_version}"
+    compile (project(':java')) {
+        exclude group: 'org.whispersystems', module: 'signal-protocol-java'
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion '21.1.2'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    libraryVariants.all { variant ->
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.aar')) {
+                def fileName = "${archivesBaseName}-${version}.aar"
+                output.outputFile = new File(outputFile.parent, fileName)
+            }
+        }
+    }
+
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name.equals("lint")) {
+        task.enabled = false
+    }
+}
+
+signing {
+    required { has("release") && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
+
+
+def sonatypeRepo            = sonatypeRepo != null ? sonatypeRepo : ""
+def whisperSonatypeUsername = whisperSonatypeUsername != null ? whisperSonatypeUsername : ""
+def whisperSonatypePassword = whisperSonatypePassword != null ? whisperSonatypePassword : ""
+
+uploadArchives {
+    configuration = configurations.archives
+    repositories.mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+        repository(url: sonatypeRepo) {
+            authentication(userName: whisperSonatypeUsername, password: whisperSonatypePassword)
+        }
+
+        pom.project {
+            name 'signal-service-android'
+            packaging 'aar'
+            description 'Signal Service communication library for Android'
+            url 'https://github.com/WhisperSystems/libsignal-service-java'
+
+            scm {
+                url 'scm:git@github.com:WhisperSystems/libsignal-service-java.git'
+                connection 'scm:git@github.com:WhisperSystems/libsignal-service-java.git'
+                developerConnection 'scm:git@github.com:WhisperSystems/libsignal-service-java.git'
+            }
+
+            licenses {
+                license {
+                    name 'GPLv3'
+                    url 'https://www.gnu.org/licenses/gpl-3.0.txt'
+                    distribution 'repo'
+                }
+            }
+
+            developers {
+                developer {
+                    name 'Moxie Marlinspike'
+                }
+            }
+        }
+    }
+}
+
+task installArchives(type: Upload) {
+    description "Installs the artifacts to the local Maven repository."
+    configuration = configurations['archives']
+    repositories {
+        mavenDeployer {
+            repository url: "file://${System.properties['user.home']}/.m2/repository"
+        }
+    }
+}
