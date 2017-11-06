@@ -11,13 +11,19 @@ import java.io.InputStream;
 public abstract class SignalServiceAttachment {
 
   private final String contentType;
+  private final String filename;
 
-  protected SignalServiceAttachment(String contentType) {
+  protected SignalServiceAttachment(String contentType, String filename) {
     this.contentType = contentType;
+    this.filename = filename;
   }
 
   public String getContentType() {
     return contentType;
+  }
+  
+  public String getFilename() {
+    return filename;
   }
 
   public abstract boolean isStream();
@@ -39,6 +45,7 @@ public abstract class SignalServiceAttachment {
 
     private InputStream      inputStream;
     private String           contentType;
+    private String           filename;
     private long             length;
     private ProgressListener listener;
 
@@ -51,6 +58,11 @@ public abstract class SignalServiceAttachment {
 
     public Builder withContentType(String contentType) {
       this.contentType = contentType;
+      return this;
+    }
+    
+    public Builder withFilename(String filename) {
+      this.filename = filename;
       return this;
     }
 
@@ -67,9 +79,10 @@ public abstract class SignalServiceAttachment {
     public SignalServiceAttachmentStream build() {
       if (inputStream == null) throw new IllegalArgumentException("Must specify stream!");
       if (contentType == null) throw new IllegalArgumentException("No content type specified!");
+      //if (filename == null) throw new IllegalArgumentException("No filename specified!");
       if (length == 0)         throw new IllegalArgumentException("No length specified!");
 
-      return new SignalServiceAttachmentStream(inputStream, contentType, length, listener);
+      return new SignalServiceAttachmentStream(inputStream, contentType, filename, length, listener);
     }
   }
 

@@ -18,6 +18,7 @@ import org.whispersystems.libsignal.NoSessionException;
 import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.UntrustedIdentityException;
+import org.whispersystems.libsignal.logging.Log;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage;
 import org.whispersystems.libsignal.protocol.SignalMessage;
@@ -166,6 +167,7 @@ public class SignalServiceCipher {
     for (AttachmentPointer pointer : content.getAttachmentsList()) {
       attachments.add(new SignalServiceAttachmentPointer(pointer.getId(),
                                                          pointer.getContentType(),
+                                                         pointer.getFilename(),
                                                          pointer.getKey().toByteArray(),
                                                          envelope.getRelay(),
                                                          pointer.hasSize() ? Optional.of(pointer.getSize()) : Optional.<Integer>absent(),
@@ -263,6 +265,7 @@ public class SignalServiceCipher {
 
         avatar = new SignalServiceAttachmentPointer(pointer.getId(),
                                                     pointer.getContentType(),
+                                                    pointer.getFilename(),
                                                     pointer.getKey().toByteArray(),
                                                     envelope.getRelay(),
                                                     pointer.hasDigest() ? Optional.of(pointer.getDigest().toByteArray()) : Optional.<byte[]>absent());

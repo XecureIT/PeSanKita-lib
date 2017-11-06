@@ -25,15 +25,15 @@ public class SignalServiceAttachmentPointer extends SignalServiceAttachment {
   private final Optional<byte[]>  preview;
   private final Optional<byte[]>  digest;
 
-  public SignalServiceAttachmentPointer(long id, String contentType, byte[] key, String relay, Optional<byte[]> digest) {
-    this(id, contentType, key, relay, Optional.<Integer>absent(), Optional.<byte[]>absent(), digest);
+  public SignalServiceAttachmentPointer(long id, String contentType, String filename, byte[] key, String relay, Optional<byte[]> digest) {
+    this(id, contentType, filename, key, relay, Optional.<Integer>absent(), Optional.<byte[]>absent(), digest);
   }
 
-  public SignalServiceAttachmentPointer(long id, String contentType, byte[] key, String relay,
+  public SignalServiceAttachmentPointer(long id, String contentType, String filename, byte[] key, String relay,
                                         Optional<Integer> size, Optional<byte[]> preview,
                                         Optional<byte[]> digest)
   {
-    super(contentType);
+    super(contentType, filename);
     this.id      = id;
     this.key     = key;
     this.relay   = Optional.fromNullable(relay);

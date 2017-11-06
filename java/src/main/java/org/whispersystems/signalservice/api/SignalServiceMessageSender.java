@@ -452,6 +452,9 @@ public class SignalServiceMessageSender {
                                                          .setKey(ByteString.copyFrom(attachmentKey))
                                                          .setDigest(ByteString.copyFrom(attachmentIdAndDigest.second()))
                                                          .setSize((int)attachment.getLength());
+    if (attachment.getFilename() != null) {
+      builder.setFilename(attachment.getFilename());
+    }
 
     if (attachment.getPreview().isPresent()) {
       builder.setThumbnail(ByteString.copyFrom(attachment.getPreview().get()));
