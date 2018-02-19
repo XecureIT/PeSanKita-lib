@@ -78,6 +78,7 @@ message DataMessage {
   optional GroupContext       group       = 3;
   optional uint32             flags       = 4;
   optional uint32             expireTimer = 5;
+  optional string             replyBody   = 6;
 }
 
 message SyncMessage {

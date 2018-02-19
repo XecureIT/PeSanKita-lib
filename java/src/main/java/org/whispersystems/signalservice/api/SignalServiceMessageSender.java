@@ -215,6 +215,9 @@ public class SignalServiceMessageSender {
       builder.setBody(message.getBody().get());
     }
 
+    if (message.getReplyBody().isPresent()) {
+      builder.setReplyBody(message.getReplyBody().get());
+    }
     if (message.getGroupInfo().isPresent()) {
       builder.setGroup(createGroupContent(message.getGroupInfo().get()));
     }

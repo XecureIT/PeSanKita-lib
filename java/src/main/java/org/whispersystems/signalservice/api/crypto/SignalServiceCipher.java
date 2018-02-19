@@ -18,7 +18,6 @@ import org.whispersystems.libsignal.NoSessionException;
 import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.UntrustedIdentityException;
-import org.whispersystems.libsignal.logging.Log;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage;
 import org.whispersystems.libsignal.protocol.SignalMessage;
@@ -176,7 +175,7 @@ public class SignalServiceCipher {
     }
 
     return new SignalServiceDataMessage(envelope.getTimestamp(), groupInfo, attachments,
-                                        content.getBody(), endSession, content.getExpireTimer(),
+                                        content.getBody(), content.getReplyBody(), endSession, content.getExpireTimer(),
                                         expirationUpdate);
   }
 

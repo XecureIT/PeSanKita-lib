@@ -19,6 +19,7 @@ public class SignalServiceDataMessage {
   private final long                                    timestamp;
   private final Optional<List<SignalServiceAttachment>> attachments;
   private final Optional<String>                        body;
+  private final Optional<String>                        replyBody;
   private final Optional<SignalServiceGroup>            group;
   private final boolean                                 endSession;
   private final boolean                                 expirationUpdate;
@@ -108,14 +109,32 @@ public class SignalServiceDataMessage {
    * @param body The message contents.
    * @param endSession Flag indicating whether this message should close a session.
    * @param expiresInSeconds Number of seconds in which the message should disappear after being seen.
+   * @param expirationUpdate Expiration update
+   */
+  public SignalServiceDataMessage(long timestamp, SignalServiceGroup group, List<SignalServiceAttachment> attachments, String body, boolean endSession, int expiresInSeconds, boolean expirationUpdate) {
+    this(timestamp, group, attachments, body, null, endSession, expiresInSeconds, expirationUpdate);
+  }
+
+  /**
+   * Construct a SignalServiceDataMessage.
+   *
+   * @param timestamp The sent timestamp.
+   * @param group The group information (or null if none).
+   * @param attachments The attachments (or null if none).
+   * @param body The message contents.
+   * @param replyBody Reply body
+   * @param endSession Flag indicating whether this message should close a session.
+   * @param expiresInSeconds Number of seconds in which the message should disappear after being seen.
+   * @param expirationUpdate Expiration update
    */
   public SignalServiceDataMessage(long timestamp, SignalServiceGroup group,
                                   List<SignalServiceAttachment> attachments,
-                                  String body, boolean endSession, int expiresInSeconds,
-                                  boolean expirationUpdate)
+                                  String body, String replyBody, boolean endSession,
+                                  int expiresInSeconds, boolean expirationUpdate)
   {
     this.timestamp        = timestamp;
     this.body             = Optional.fromNullable(body);
+    this.replyBody        = Optional.fromNullable(replyBody);
     this.group            = Optional.fromNullable(group);
     this.endSession       = endSession;
     this.expiresInSeconds = expiresInSeconds;
@@ -154,6 +173,13 @@ public class SignalServiceDataMessage {
   }
 
   /**
+   * @return The message reply body (if any).
+   */
+  public Optional<String> getReplyBody() {
+    return replyBody;
+  }
+
+  /**
    * @return The message group info (if any).
    */
   public Optional<SignalServiceGroup> getGroupInfo() {
@@ -182,6 +208,7 @@ public class SignalServiceDataMessage {
     private long               timestamp;
     private SignalServiceGroup group;
     private String             body;
+    private String             replyBody;    
     private boolean            endSession;
     private int                expiresInSeconds;
     private boolean            expirationUpdate;
@@ -213,6 +240,11 @@ public class SignalServiceDataMessage {
       return this;
     }
 
+    public Builder withReplyBody(String replyBody) {
+      this.replyBody = replyBody;
+      return this;
+    }
+
     public Builder asEndSessionMessage() {
       return asEndSessionMessage(true);
     }
@@ -238,8 +270,8 @@ public class SignalServiceDataMessage {
 
     public SignalServiceDataMessage build() {
       if (timestamp == 0) timestamp = System.currentTimeMillis();
-      return new SignalServiceDataMessage(timestamp, group, attachments, body, endSession,
-                                          expiresInSeconds, expirationUpdate);
+      return new SignalServiceDataMessage(timestamp, group, attachments, body, replyBody,
+                                          endSession, expiresInSeconds, expirationUpdate);
     }
   }
 }
