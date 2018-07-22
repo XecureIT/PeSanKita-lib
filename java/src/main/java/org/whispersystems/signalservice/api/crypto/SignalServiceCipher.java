@@ -9,6 +9,7 @@ package org.whispersystems.signalservice.api.crypto;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.whispersystems.libsignal.DuplicateMessageException;
+import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.InvalidKeyException;
 import org.whispersystems.libsignal.InvalidKeyIdException;
 import org.whispersystems.libsignal.InvalidMessageException;
@@ -39,6 +40,8 @@ import org.whispersystems.signalservice.api.messages.multidevice.ReadMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.RequestMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.SentTranscriptMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.SignalServiceSyncMessage;
+import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage;
+import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage.VerifiedState;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.internal.push.OutgoingPushMessage;
 import org.whispersystems.signalservice.internal.push.PushTransportDetails;
@@ -47,6 +50,7 @@ import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Conten
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.DataMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.SyncMessage;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Verified;
 import org.whispersystems.signalservice.internal.util.Base64;
 
 import java.util.LinkedList;
@@ -64,7 +68,7 @@ public class SignalServiceCipher {
 
   private static final String TAG = SignalServiceCipher.class.getSimpleName();
 
-  private final SignalProtocolStore      signalProtocolStore;
+  private final SignalProtocolStore  signalProtocolStore;
   private final SignalServiceAddress localAddress;
 
   public SignalServiceCipher(SignalServiceAddress localAddress, SignalProtocolStore signalProtocolStore) {
@@ -72,7 +76,9 @@ public class SignalServiceCipher {
     this.localAddress = localAddress;
   }
 
-  public OutgoingPushMessage encrypt(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean legacy, boolean silent) {
+  public OutgoingPushMessage encrypt(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean silent)
+      throws UntrustedIdentityException
+  {
     SessionCipher        sessionCipher        = new SessionCipher(signalProtocolStore, destination);
     PushTransportDetails transportDetails     = new PushTransportDetails(sessionCipher.getSessionVersion());
     CiphertextMessage    message              = sessionCipher.encrypt(transportDetails.getPaddedMessageBody(unpaddedMessage));
@@ -87,8 +93,7 @@ public class SignalServiceCipher {
       default: throw new AssertionError("Bad type: " + message.getType());
     }
 
-    return new OutgoingPushMessage(type, destination.getDeviceId(), remoteRegistrationId,
-                                   legacy ? body : null, legacy ? null : body, silent);
+    return new OutgoingPushMessage(type, destination.getDeviceId(), remoteRegistrationId, body, silent);
   }
 
   /**
@@ -162,24 +167,27 @@ public class SignalServiceCipher {
     List<SignalServiceAttachment> attachments      = new LinkedList<>();
     boolean                       endSession       = ((content.getFlags() & DataMessage.Flags.END_SESSION_VALUE) != 0);
     boolean                       expirationUpdate = ((content.getFlags() & DataMessage.Flags.EXPIRATION_TIMER_UPDATE_VALUE) != 0);
+    boolean                       profileKeyUpdate = ((content.getFlags() & DataMessage.Flags.PROFILE_KEY_UPDATE_VALUE) != 0);
 
     for (AttachmentPointer pointer : content.getAttachmentsList()) {
       attachments.add(new SignalServiceAttachmentPointer(pointer.getId(),
                                                          pointer.getContentType(),
-                                                         pointer.getFilename(),
                                                          pointer.getKey().toByteArray(),
                                                          envelope.getRelay(),
                                                          pointer.hasSize() ? Optional.of(pointer.getSize()) : Optional.<Integer>absent(),
                                                          pointer.hasThumbnail() ? Optional.of(pointer.getThumbnail().toByteArray()): Optional.<byte[]>absent(),
-                                                         pointer.hasDigest() ? Optional.of(pointer.getDigest().toByteArray()) : Optional.<byte[]>absent()));
+                                                         pointer.hasDigest() ? Optional.of(pointer.getDigest().toByteArray()) : Optional.<byte[]>absent(),
+                                                         pointer.hasFileName() ? Optional.of(pointer.getFileName()) : Optional.<String>absent(),
+                                                         (pointer.getFlags() & AttachmentPointer.Flags.VOICE_MESSAGE_VALUE) != 0));
     }
 
     return new SignalServiceDataMessage(envelope.getTimestamp(), groupInfo, attachments,
                                         content.getBody(), content.getReplyBody(), endSession, content.getExpireTimer(),
-                                        expirationUpdate);
+                                        expirationUpdate, content.hasProfileKey() ? content.getProfileKey().toByteArray() : null,
+                                        profileKeyUpdate);
   }
 
-  private SignalServiceSyncMessage createSynchronizeMessage(SignalServiceEnvelope envelope, SyncMessage content) {
+  private SignalServiceSyncMessage createSynchronizeMessage(SignalServiceEnvelope envelope, SyncMessage content) throws InvalidMessageException {
     if (content.hasSent()) {
       SyncMessage.Sent sentContent = content.getSent();
       return SignalServiceSyncMessage.forSentTranscript(new SentTranscriptMessage(sentContent.getDestination(),
@@ -200,6 +208,30 @@ public class SignalServiceCipher {
       }
 
       return SignalServiceSyncMessage.forRead(readMessages);
+    }
+
+    if (content.hasVerified()) {
+      try {
+        Verified    verified    = content.getVerified();
+        String      destination = verified.getDestination();
+        IdentityKey identityKey = new IdentityKey(verified.getIdentityKey().toByteArray(), 0);
+
+        VerifiedState verifiedState;
+
+        if (verified.getState() == Verified.State.DEFAULT) {
+          verifiedState = VerifiedState.DEFAULT;
+        } else if (verified.getState() == Verified.State.VERIFIED) {
+          verifiedState = VerifiedState.VERIFIED;
+        } else if (verified.getState() == Verified.State.UNVERIFIED) {
+          verifiedState = VerifiedState.UNVERIFIED;
+        } else {
+          throw new InvalidMessageException("Unknown state: " + verified.getState().getNumber());
+        }
+
+        return SignalServiceSyncMessage.forVerified(new VerifiedMessage(destination, identityKey, verifiedState, System.currentTimeMillis()));
+      } catch (InvalidKeyException e) {
+        throw new InvalidMessageException(e);
+      }
     }
 
     return SignalServiceSyncMessage.empty();
@@ -264,10 +296,11 @@ public class SignalServiceCipher {
 
         avatar = new SignalServiceAttachmentPointer(pointer.getId(),
                                                     pointer.getContentType(),
-                                                    pointer.getFilename(),
                                                     pointer.getKey().toByteArray(),
                                                     envelope.getRelay(),
-                                                    pointer.hasDigest() ? Optional.of(pointer.getDigest().toByteArray()) : Optional.<byte[]>absent());
+                                                    pointer.hasDigest() ? Optional.of(pointer.getDigest().toByteArray()) : Optional.<byte[]>absent(),
+                                                    Optional.<String>absent(),
+                                                    false);
       }
 
       if (content.getGroup().hasOwner()) {

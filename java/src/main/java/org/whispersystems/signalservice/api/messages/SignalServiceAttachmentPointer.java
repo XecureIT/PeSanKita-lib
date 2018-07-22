@@ -24,22 +24,27 @@ public class SignalServiceAttachmentPointer extends SignalServiceAttachment {
   private final Optional<Integer> size;
   private final Optional<byte[]>  preview;
   private final Optional<byte[]>  digest;
+  private final Optional<String>  fileName;
+  private final boolean           voiceNote;
 
-  public SignalServiceAttachmentPointer(long id, String contentType, String filename, byte[] key, String relay, Optional<byte[]> digest) {
-    this(id, contentType, filename, key, relay, Optional.<Integer>absent(), Optional.<byte[]>absent(), digest);
+  public SignalServiceAttachmentPointer(long id, String contentType, byte[] key, String relay, Optional<byte[]> digest, Optional<String> fileName, boolean voiceNote) {
+    this(id, contentType, key, relay, Optional.<Integer>absent(), Optional.<byte[]>absent(), digest, fileName, voiceNote);
   }
 
-  public SignalServiceAttachmentPointer(long id, String contentType, String filename, byte[] key, String relay,
+  public SignalServiceAttachmentPointer(long id, String contentType, byte[] key, String relay,
                                         Optional<Integer> size, Optional<byte[]> preview,
-                                        Optional<byte[]> digest)
+                                        Optional<byte[]> digest, Optional<String> fileName,
+                                        boolean voiceNote)
   {
-    super(contentType, filename);
-    this.id      = id;
-    this.key     = key;
-    this.relay   = Optional.fromNullable(relay);
-    this.size    = size;
-    this.preview = preview;
-    this.digest  = digest;
+    super(contentType);
+    this.id        = id;
+    this.key       = key;
+    this.relay     = Optional.fromNullable(relay);
+    this.size      = size;
+    this.preview   = preview;
+    this.digest    = digest;
+    this.fileName  = fileName;
+    this.voiceNote = voiceNote;
   }
 
   public long getId() {
@@ -68,11 +73,19 @@ public class SignalServiceAttachmentPointer extends SignalServiceAttachment {
     return size;
   }
 
+  public Optional<String> getFileName() {
+    return fileName;
+  }
+
   public Optional<byte[]> getPreview() {
     return preview;
   }
 
   public Optional<byte[]> getDigest() {
     return digest;
+  }
+
+  public boolean getVoiceNote() {
+    return voiceNote;
   }
 }

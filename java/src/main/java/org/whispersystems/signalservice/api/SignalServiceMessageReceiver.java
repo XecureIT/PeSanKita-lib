@@ -8,18 +8,23 @@ package org.whispersystems.signalservice.api;
 
 import org.whispersystems.libsignal.InvalidMessageException;
 import org.whispersystems.signalservice.api.crypto.AttachmentCipherInputStream;
+import org.whispersystems.signalservice.api.crypto.ProfileCipherInputStream;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment.ProgressListener;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
+import org.whispersystems.signalservice.api.push.SignalServiceAddress;
+import org.whispersystems.signalservice.api.profiles.SignalServiceProfile;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
+import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 import org.whispersystems.signalservice.internal.push.PushServiceSocket;
 import org.whispersystems.signalservice.internal.push.SignalServiceEnvelopeEntity;
-import org.whispersystems.signalservice.internal.push.SignalServiceUrl;
+import org.whispersystems.signalservice.internal.configuration.SignalServiceUrl;
 import org.whispersystems.signalservice.internal.util.StaticCredentialsProvider;
 import org.whispersystems.signalservice.internal.websocket.WebSocketConnection;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
@@ -32,10 +37,10 @@ import java.util.List;
  */
 public class SignalServiceMessageReceiver {
 
-  private final PushServiceSocket   socket;
-  private final SignalServiceUrl[]  urls;
-  private final CredentialsProvider credentialsProvider;
-  private final String              userAgent;
+  private final PushServiceSocket          socket;
+  private final SignalServiceConfiguration urls;
+  private final CredentialsProvider        credentialsProvider;
+  private final String                     userAgent;
 
   /**
    * Construct a SignalServiceMessageReceiver.
@@ -45,7 +50,7 @@ public class SignalServiceMessageReceiver {
    * @param password The Signal Service user password.
    * @param signalingKey The 52 byte signaling key assigned to this user at registration.
    */
-  public SignalServiceMessageReceiver(SignalServiceUrl[] urls,
+  public SignalServiceMessageReceiver(SignalServiceConfiguration urls,
                                       String user, String password,
                                       String signalingKey, String userAgent)
   {
@@ -58,7 +63,7 @@ public class SignalServiceMessageReceiver {
    * @param urls The URL of the Signal Service.
    * @param credentials The Signal Service user's credentials.
    */
-  public SignalServiceMessageReceiver(SignalServiceUrl[] urls, CredentialsProvider credentials, String userAgent)
+  public SignalServiceMessageReceiver(SignalServiceConfiguration urls, CredentialsProvider credentials, String userAgent)
   {
     this.urls                 = urls;
     this.credentialsProvider = credentials;
@@ -83,6 +88,18 @@ public class SignalServiceMessageReceiver {
     return retrieveAttachment(pointer, destination, maxSizeBytes, null);
   }
 
+  public SignalServiceProfile retrieveProfile(SignalServiceAddress address)
+      throws IOException
+  {
+    return socket.retrieveProfile(address);
+  }
+
+  public InputStream retrieveProfileAvatar(String path, File destination, byte[] profileKey, int maxSizeBytes)
+      throws IOException
+  {
+    socket.retrieveProfileAvatar(path, destination, maxSizeBytes);
+    return new ProfileCipherInputStream(new FileInputStream(destination), profileKey);
+  }
 
   /**
    * Retrieves a SignalServiceAttachment.
@@ -111,7 +128,7 @@ public class SignalServiceMessageReceiver {
    * @return A SignalServiceMessagePipe for receiving Signal Service messages.
    */
   public SignalServiceMessagePipe createMessagePipe() {
-    WebSocketConnection webSocket = new WebSocketConnection(urls[0].getUrl(), urls[0].getTrustStore(), credentialsProvider, userAgent);
+    WebSocketConnection webSocket = new WebSocketConnection(urls.getSignalServiceUrls()[0].getUrl(), urls.getSignalServiceUrls()[0].getTrustStore(), credentialsProvider, userAgent);
     return new SignalServiceMessagePipe(webSocket, credentialsProvider);
   }
 

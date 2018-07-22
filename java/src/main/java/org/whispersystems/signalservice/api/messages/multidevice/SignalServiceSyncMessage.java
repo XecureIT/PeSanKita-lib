@@ -15,18 +15,20 @@ import java.util.List;
 public class SignalServiceSyncMessage {
 
   private final Optional<SentTranscriptMessage>   sent;
-  private final Optional<SignalServiceAttachment> contacts;
+  private final Optional<ContactsMessage>         contacts;
   private final Optional<SignalServiceAttachment> groups;
   private final Optional<BlockedListMessage>      blockedList;
   private final Optional<RequestMessage>          request;
   private final Optional<List<ReadMessage>>       reads;
+  private final Optional<VerifiedMessage>         verified;
 
   private SignalServiceSyncMessage(Optional<SentTranscriptMessage>   sent,
-                                   Optional<SignalServiceAttachment> contacts,
+                                   Optional<ContactsMessage>         contacts,
                                    Optional<SignalServiceAttachment> groups,
                                    Optional<BlockedListMessage>      blockedList,
                                    Optional<RequestMessage>          request,
-                                   Optional<List<ReadMessage>>       reads)
+                                   Optional<List<ReadMessage>>       reads,
+                                   Optional<VerifiedMessage>         verified)
   {
     this.sent        = sent;
     this.contacts    = contacts;
@@ -34,51 +36,57 @@ public class SignalServiceSyncMessage {
     this.blockedList = blockedList;
     this.request     = request;
     this.reads       = reads;
+    this.verified    = verified;
   }
 
   public static SignalServiceSyncMessage forSentTranscript(SentTranscriptMessage sent) {
     return new SignalServiceSyncMessage(Optional.of(sent),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
-  public static SignalServiceSyncMessage forContacts(SignalServiceAttachment contacts) {
+  public static SignalServiceSyncMessage forContacts(ContactsMessage contacts) {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
                                         Optional.of(contacts),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public static SignalServiceSyncMessage forGroups(SignalServiceAttachment groups) {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.of(groups),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public static SignalServiceSyncMessage forRequest(RequestMessage request) {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.of(request),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public static SignalServiceSyncMessage forRead(List<ReadMessage> reads) {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.of(reads));
+                                        Optional.of(reads),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public static SignalServiceSyncMessage forRead(ReadMessage read) {
@@ -86,29 +94,42 @@ public class SignalServiceSyncMessage {
     reads.add(read);
 
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.of(reads));
+                                        Optional.of(reads),
+                                        Optional.<VerifiedMessage>absent());
+  }
+
+  public static SignalServiceSyncMessage forVerified(VerifiedMessage verifiedMessage) {
+    return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
+                                        Optional.<ContactsMessage>absent(),
+                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<BlockedListMessage>absent(),
+                                        Optional.<RequestMessage>absent(),
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.of(verifiedMessage));
   }
 
   public static SignalServiceSyncMessage forBlocked(BlockedListMessage blocked) {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.of(blocked),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public static SignalServiceSyncMessage empty() {
     return new SignalServiceSyncMessage(Optional.<SentTranscriptMessage>absent(),
-                                        Optional.<SignalServiceAttachment>absent(),
+                                        Optional.<ContactsMessage>absent(),
                                         Optional.<SignalServiceAttachment>absent(),
                                         Optional.<BlockedListMessage>absent(),
                                         Optional.<RequestMessage>absent(),
-                                        Optional.<List<ReadMessage>>absent());
+                                        Optional.<List<ReadMessage>>absent(),
+                                        Optional.<VerifiedMessage>absent());
   }
 
   public Optional<SentTranscriptMessage> getSent() {
@@ -119,7 +140,7 @@ public class SignalServiceSyncMessage {
     return groups;
   }
 
-  public Optional<SignalServiceAttachment> getContacts() {
+  public Optional<ContactsMessage> getContacts() {
     return contacts;
   }
 
@@ -133,6 +154,10 @@ public class SignalServiceSyncMessage {
 
   public Optional<BlockedListMessage> getBlockedList() {
     return blockedList;
+  }
+
+  public Optional<VerifiedMessage> getVerified() {
+    return verified;
   }
 
 }

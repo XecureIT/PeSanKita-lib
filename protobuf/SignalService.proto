@@ -31,6 +31,7 @@ message Content {
   optional DataMessage dataMessage = 1;
   optional SyncMessage syncMessage = 2;
   optional CallMessage callMessage = 3;
+  optional NullMessage nullMessage = 4;
 }
 
 message CallMessage {
@@ -69,8 +70,9 @@ message CallMessage {
 
 message DataMessage {
   enum Flags {
-    END_SESSION = 1;
-    EXPIRATION_TIMER_UPDATE = 2;
+      END_SESSION             = 1;
+      EXPIRATION_TIMER_UPDATE = 2;
+      PROFILE_KEY_UPDATE      = 4;
   }
 
   optional string             body        = 1;
@@ -79,6 +81,24 @@ message DataMessage {
   optional uint32             flags       = 4;
   optional uint32             expireTimer = 5;
   optional string             replyBody   = 6;
+  optional bytes              profileKey  = 7;
+}
+
+message NullMessage {
+  optional bytes padding = 1;
+}
+
+message Verified {
+  enum State {
+    DEFAULT    = 0;
+    VERIFIED   = 1;
+    UNVERIFIED = 2;
+  }
+
+  optional string destination = 1;
+  optional bytes  identityKey = 2;
+  optional State  state       = 3;
+  optional bytes  nullMessage = 4;
 }
 
 message SyncMessage {
@@ -90,7 +110,8 @@ message SyncMessage {
   }
 
   message Contacts {
-    optional AttachmentPointer blob = 1;
+    optional AttachmentPointer blob     = 1;
+    optional bool              complete = 2 [default = false];
   }
 
   message Groups {
@@ -123,16 +144,23 @@ message SyncMessage {
   optional Request  request  = 4;
   repeated Read     read     = 5;
   optional Blocked  blocked  = 6;
+  optional Verified verified = 7;
+  optional bytes    padding  = 8;
 }
 
 message AttachmentPointer {
+  enum Flags {
+    VOICE_MESSAGE = 1;
+  }
+
   optional fixed64 id          = 1;
   optional string  contentType = 2;
   optional bytes   key         = 3;
   optional uint32  size        = 4;
   optional bytes   thumbnail   = 5;
   optional bytes   digest      = 6;
-  optional string  filename    = 7;
+  optional string  fileName    = 7;
+  optional uint32  flags       = 8;
 }
 
 message GroupContext {
@@ -158,10 +186,12 @@ message ContactDetails {
     optional uint32 length      = 2;
   }
 
-  optional string number  = 1;
-  optional string name    = 2;
-  optional Avatar avatar  = 3;
-  optional string color   = 4;
+  optional string   number     = 1;
+  optional string   name       = 2;
+  optional Avatar   avatar     = 3;
+  optional string   color      = 4;
+  optional Verified verified   = 5;
+  optional bytes    profileKey = 6;
 }
 
 message GroupDetails {

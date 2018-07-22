@@ -6,24 +6,20 @@
 
 package org.whispersystems.signalservice.api.messages;
 
+import org.whispersystems.libsignal.util.guava.Optional;
+
 import java.io.InputStream;
 
 public abstract class SignalServiceAttachment {
 
   private final String contentType;
-  private final String filename;
 
-  protected SignalServiceAttachment(String contentType, String filename) {
+  protected SignalServiceAttachment(String contentType) {
     this.contentType = contentType;
-    this.filename = filename;
   }
 
   public String getContentType() {
     return contentType;
-  }
-  
-  public String getFilename() {
-    return filename;
   }
 
   public abstract boolean isStream();
@@ -45,9 +41,10 @@ public abstract class SignalServiceAttachment {
 
     private InputStream      inputStream;
     private String           contentType;
-    private String           filename;
+    private String           fileName;
     private long             length;
     private ProgressListener listener;
+    private boolean          voiceNote;
 
     private Builder() {}
 
@@ -60,14 +57,14 @@ public abstract class SignalServiceAttachment {
       this.contentType = contentType;
       return this;
     }
-    
-    public Builder withFilename(String filename) {
-      this.filename = filename;
-      return this;
-    }
 
     public Builder withLength(long length) {
       this.length = length;
+      return this;
+    }
+
+    public Builder withFileName(String fileName) {
+      this.fileName = fileName;
       return this;
     }
 
@@ -76,13 +73,17 @@ public abstract class SignalServiceAttachment {
       return this;
     }
 
+    public Builder withVoiceNote(boolean voiceNote) {
+      this.voiceNote = voiceNote;
+      return this;
+    }
+
     public SignalServiceAttachmentStream build() {
       if (inputStream == null) throw new IllegalArgumentException("Must specify stream!");
       if (contentType == null) throw new IllegalArgumentException("No content type specified!");
-      //if (filename == null) throw new IllegalArgumentException("No filename specified!");
       if (length == 0)         throw new IllegalArgumentException("No length specified!");
 
-      return new SignalServiceAttachmentStream(inputStream, contentType, filename, length, listener);
+      return new SignalServiceAttachmentStream(inputStream, contentType, length, Optional.fromNullable(fileName), voiceNote, listener);
     }
   }
 
